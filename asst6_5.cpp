@@ -509,7 +509,9 @@ static void drawArcBall(Uniforms& uniforms) {
   Matrix4 MVM = rigTFormToMatrix(arcballEye) * Matrix4::makeScale(Cvec3(1, 1, 1) * g_arcballScale * g_arcballScreenRadius);
   sendModelViewNormalMatrix(uniforms, MVM, normalMatrix(MVM));
 
-  safe_glUniform3f(uniforms.h_uColor, 0.27, 0.82, 0.35); // set color
+  uniforms.put("uColor", Cvec3 (0.27, 0.82, 0.35));
+
+  //safe_glUniform3f(uniforms.h_uColor, 0.27, 0.82, 0.35); // set color
   g_sphere->draw(uniforms);
 
   // switch back to solid mode
@@ -532,8 +534,6 @@ static void drawStuff(bool picking) {
 
   const Cvec3 eyeLight1 = Cvec3(invEyeRbt * Cvec4(g_light1, 1));
   const Cvec3 eyeLight2 = Cvec3(invEyeRbt * Cvec4(g_light2, 1));
-  safe_glUniform3f(uniforms.h_uLight, eyeLight1[0], eyeLight1[1], eyeLight1[2]);
-  safe_glUniform3f(uniforms.h_uLight2, eyeLight2[0], eyeLight2[1], eyeLight2[2]);
 
   uniforms.put("uLight", eyeLight1);
   uniforms.put("uLight2", eyeLight2);
