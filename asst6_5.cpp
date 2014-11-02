@@ -117,7 +117,9 @@ static shared_ptr<Geometry> g_ground, g_cube, g_sphere;
 
 // --------- Scene
 
-static const Cvec3 g_light1(2.0, 3.0, 14.0), g_light2(-2, -3.0, -5.0);  // define two lights positions in world space
+//static const Cvec3 g_light1(2.0, 3.0, 14.0), g_light2(-2, -3.0, -5.0);  // define two lights positions in world space
+
+static shared_ptr<SgTransformNode> g_light1node, g_light2node;
 
 static shared_ptr<SgRootNode> g_world;
 static shared_ptr<SgRbtNode> g_skyNode, g_groundNode, g_robot1Node, g_robot2Node;
@@ -512,7 +514,7 @@ static void drawArcBall(Uniforms& uniforms) {
   uniforms.put("uColor", Cvec3 (0.27, 0.82, 0.35));
 
   //safe_glUniform3f(uniforms.h_uColor, 0.27, 0.82, 0.35); // set color
-  g_sphere->draw((int*)&uniforms);
+  //g_sphere->draw((int*)&uniforms);
 
   // switch back to solid mode
   g_arcballMat->draw(*g_sphere, uniforms);
@@ -981,6 +983,11 @@ static void constructRobot(shared_ptr<SgTransformNode> base, shared_ptr<Material
 
 static void initScene() {
   g_world.reset(new SgRootNode());
+
+
+  g_light1node.reset(RigTForm((Cvec3) (2.0, 3.0, 14.0)));
+  g_light2node.reset(RigTForm((Cvec3) (-2.0, -3.0, -5.0)));
+
 
   g_skyNode.reset(new SgRbtNode(RigTForm(Cvec3(0.0, 0.25, 4.0))));
 
