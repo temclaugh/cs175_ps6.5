@@ -632,10 +632,11 @@ static void drawStuff(const ShaderState& curSS, bool picking) {
 }
 
 static void display() {
-  glUseProgram(g_shaderStates[g_activeShader]->program);
+  // No more glUseProgram
+
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  drawStuff(*g_shaderStates[g_activeShader], false);
+  drawStuff(false); // no more curSS
 
   glutSwapBuffers();
 
@@ -650,11 +651,10 @@ static void pick() {
 
   glClearColor(0, 0, 0, 0);
 
-  // using PICKING_SHADER as the shader
-  glUseProgram(g_shaderStates[PICKING_SHADER]->program);
-
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  drawStuff(*g_shaderStates[PICKING_SHADER], true);
+
+  // No more glUseProgram
+  drawStuff(true); // no more curSS
 
   // Uncomment below and comment out the glutPostRedisplay in mouse(...) call back
   // to see result of the pick rendering pass
@@ -838,7 +838,7 @@ static void keyboard(const unsigned char key, const int x, const int y) {
     writePpmScreenshot(g_windowWidth, g_windowHeight, "out.ppm");
     break;
   case 'f':
-    g_activeShader = (g_activeShader + 1) % g_numRegularShaders;
+    cout << "Nein!" << endl;
     break;
   case 'v':
   {
@@ -943,15 +943,37 @@ static void initGLState() {
     glEnable(GL_FRAMEBUFFER_SRGB);
 }
 
-static void initShaders() {
-  g_shaderStates.resize(g_numShaders);
-  for (int i = 0; i < g_numShaders; ++i) {
-    if (g_Gl2Compatible)
-      g_shaderStates[i].reset(new ShaderState(g_shaderFilesGl2[i][0], g_shaderFilesGl2[i][1]));
-    else
-      g_shaderStates[i].reset(new ShaderState(g_shaderFiles[i][0], g_shaderFiles[i][1]));
-  }
-}
+static void initMaterials() {
+  // Create some prototype materials
+  Material diffuse("./shaders/basic-gl3.vshader", "./shaders/diffuse-gl3.fshader");
+  Material solid("./shaders/basic-gl3.vshader", "./shaders/solid-gl3.fshader");
+
+  // copy diffuse prototype and set red color
+  g_redDiffuseMat.reset(new Material(diffuse));
+  g_redDiffuseMat->getUniforms().put("uColor", Cvec3f(1, 0, 0));
+
+  // copy diffuse prototype and set blue color
+  g_blueDiffuseMat.reset(new Material(diffuse));
+  g_blueDiffuseMat->getUniforms().put("uColor", Cvec3f(0, 0, 1));
+
+  // normal mapping material
+  g_bumpFloorMat.reset(new Material("./shaders/normal-gl3.vshader", "./shaders/normal-gl3.fshader"));
+  g_bumpFloorMat->getUniforms().put("uTexColor", shared_ptr<ImageTexture>(new ImageTexture("Fieldstone.ppm", true)));
+  g_bumpFloorMat->getUniforms().put("uTexNormal", shared_ptr<ImageTexture>(new ImageTexture("FieldstoneNormal.ppm", false)));
+
+  // copy solid prototype, and set to wireframed rendering
+  g_arcballMat.reset(new Material(solid));
+  g_arcballMat->getUniforms().put("uColor", Cvec3f(0.27f, 0.82f, 0.35f));
+  g_arcballMat->getRenderStates().polygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+  // copy solid prototype, and set to color white
+  g_lightMat.reset(new Material(solid));
+  g_lightMat->getUniforms().put("uColor", Cvec3f(1, 1, 1));
+
+  // pick shader
+  g_pickingMat.reset(new Material("./shaders/basic-gl3.vshader", "./shaders/pick-gl3.fshader"));
+};
+
 
 static void initGeometry() {
   initGround();
@@ -960,7 +982,7 @@ static void initGeometry() {
   initRobots();
 }
 
-static void constructRobot(shared_ptr<SgTransformNode> base, const Cvec3& color) {
+static void constructRobot(shared_ptr<SgTransformNode> base, shared_ptr<Material> material) {
   const double ARM_LEN = 0.7,
                ARM_THICK = 0.25,
                LEG_LEN = 1,
@@ -1020,9 +1042,9 @@ static void constructRobot(shared_ptr<SgTransformNode> base, const Cvec3& color)
     }
   }
   for (int i = 0; i < NUM_SHAPES; ++i) {
-    shared_ptr<MyShapeNode> shape(
+    shared_ptr<SgGeometryShapeNode> shape(
       new MyShapeNode(shapeDesc[i].geometry,
-                      color,
+                      material, // USE MATERIAL as opposed to color
                       Cvec3(shapeDesc[i].x, shapeDesc[i].y, shapeDesc[i].z),
                       Cvec3(0, 0, 0),
                       Cvec3(shapeDesc[i].sx, shapeDesc[i].sy, shapeDesc[i].sz)));
@@ -1073,7 +1095,7 @@ int main(int argc, char * argv[]) {
 #endif
 
     initGLState();
-    initShaders();
+    initMaterials();
     initGeometry();
     initScene();
 
