@@ -516,7 +516,9 @@ static void drawArcBall(Uniforms& uniforms) {
   g_arcballMat->draw(*g_sphere, uniforms);
 }
 
-static void drawStuff(Uniforms& uniforms, bool picking) {
+static void drawStuff(bool picking) {
+
+  Uniforms uniforms;
   // if we are not translating, update arcball scale
   if (!(g_mouseMClickButton || (g_mouseLClickButton && g_mouseRClickButton) || (g_mouseLClickButton && !g_mouseRClickButton && g_spaceDown)))
     updateArcballScale();
@@ -533,6 +535,9 @@ static void drawStuff(Uniforms& uniforms, bool picking) {
   safe_glUniform3f(uniforms.h_uLight, eyeLight1[0], eyeLight1[1], eyeLight1[2]);
   safe_glUniform3f(uniforms.h_uLight2, eyeLight2[0], eyeLight2[1], eyeLight2[2]);
 
+  uniforms.put("uLight", eyeLight1);
+  uniforms.put("uLight2", eyeLight2);
+
   if (!picking) {
     Drawer drawer(invEyeRbt, uniforms);
     g_world->accept(drawer);
@@ -543,6 +548,7 @@ static void drawStuff(Uniforms& uniforms, bool picking) {
   else {
     Picker picker(invEyeRbt, uniforms);
     g_world->accept(picker);
+    g_overridingMaterial.reset();
     glFlush();
     g_currentPickedRbtNode = picker.getRbtNodeAtXY(g_mouseClickX, g_mouseClickY);
     if (g_currentPickedRbtNode == g_groundNode)
