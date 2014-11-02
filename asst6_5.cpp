@@ -39,6 +39,7 @@
 #include "drawer.h"
 #include "picker.h"
 #include "sgutils.h"
+#include "geometry.h"
 
 using namespace std;
 using namespace tr1;
@@ -95,98 +96,21 @@ static bool g_pickingMode = false;
 
 // -------- Shaders
 
-static const int g_numShaders = 3, g_numRegularShaders = 2;
-static const int PICKING_SHADER = 2;
-static const char * const g_shaderFiles[g_numShaders][2] = {
-  {"./shaders/basic-gl3.vshader", "./shaders/diffuse-gl3.fshader"},
-  {"./shaders/basic-gl3.vshader", "./shaders/solid-gl3.fshader"},
-  {"./shaders/basic-gl3.vshader", "./shaders/pick-gl3.fshader"}
-};
-static const char * const g_shaderFilesGl2[g_numShaders][2] = {
-  {"./shaders/basic-gl2.vshader", "./shaders/diffuse-gl2.fshader"},
-  {"./shaders/basic-gl2.vshader", "./shaders/solid-gl2.fshader"},
-  {"./shaders/basic-gl2.vshader", "./shaders/pick-gl2.fshader"}
-};
-static vector<shared_ptr<ShaderState> > g_shaderStates; // our global shader states
+static shared_ptr<Material> g_redDiffuseMat,
+                            g_blueDiffuseMat,
+                            g_bumpFloorMat,
+                            g_arcballMat,
+                            g_pickingMat,
+                            g_lightMat;
+
+shared_ptr<Material> g_overridingMaterial;
 
 // linked list of frame vectors
 static list<vector<RigTForm> > key_frames;
 static int cur_frame = -1;
 
 // --------- Geometry
-
-// Macro used to obtain relative offset of a field within a struct
-#define FIELD_OFFSET(StructType, field) ((GLvoid*)offsetof(StructType, field))
-
-// A vertex with floating point position and normal
-struct VertexPN {
-  Cvec3f p, n;
-
-  VertexPN() {}
-  VertexPN(float x, float y, float z,
-           float nx, float ny, float nz)
-    : p(x,y,z), n(nx, ny, nz)
-  {}
-
-  // Define copy constructor and assignment operator from GenericVertex so we can
-  // use make* functions from geometrymaker.h
-  VertexPN(const GenericVertex& v) {
-    *this = v;
-  }
-
-  VertexPN& operator = (const GenericVertex& v) {
-    p = v.pos;
-    n = v.normal;
-    return *this;
-  }
-};
-
-struct Geometry {
-  GlBufferObject vbo, ibo;
-  GlArrayObject vao;
-  int vboLen, iboLen;
-
-  Geometry(VertexPN *vtx, unsigned short *idx, int vboLen, int iboLen) {
-    this->vboLen = vboLen;
-    this->iboLen = iboLen;
-
-    // Now create the VBO and IBO
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(VertexPN) * vboLen, vtx, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned short) * iboLen, idx, GL_STATIC_DRAW);
-  }
-
-  void draw(const ShaderState& curSS) {
-    // bind the object's VAO
-    glBindVertexArray(vao);
-
-    // Enable the attributes used by our shader
-    safe_glEnableVertexAttribArray(curSS.h_aPosition);
-    safe_glEnableVertexAttribArray(curSS.h_aNormal);
-
-    // bind vbo
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    safe_glVertexAttribPointer(curSS.h_aPosition, 3, GL_FLOAT, GL_FALSE, sizeof(VertexPN), FIELD_OFFSET(VertexPN, p));
-    safe_glVertexAttribPointer(curSS.h_aNormal, 3, GL_FLOAT, GL_FALSE, sizeof(VertexPN), FIELD_OFFSET(VertexPN, n));
-
-    // bind ibo
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-
-    // draw!
-    glDrawElements(GL_TRIANGLES, iboLen, GL_UNSIGNED_SHORT, 0);
-
-    // Disable the attributes used by our shader
-    safe_glDisableVertexAttribArray(curSS.h_aPosition);
-    safe_glDisableVertexAttribArray(curSS.h_aNormal);
-
-    // disable VAO
-    glBindVertexArray(NULL);
-  }
-};
-
-typedef SgGeometryShapeNode<Geometry> MyShapeNode;
+typedef SgGeometryShapeNode MyShapeNode;
 
 // Vertex buffer and index buffer associated with the ground and cube geometry
 static shared_ptr<Geometry> g_ground, g_cube, g_sphere;
@@ -434,39 +358,38 @@ static void animateTimerCallback(int ms) {
 }
 
 static void initGround() {
-  // A x-z plane at y = g_groundY of dimension [-g_groundSize, g_groundSize]^2
-  VertexPN vtx[4] = {
-    VertexPN(-g_groundSize, g_groundY, -g_groundSize, 0, 1, 0),
-    VertexPN(-g_groundSize, g_groundY,  g_groundSize, 0, 1, 0),
-    VertexPN( g_groundSize, g_groundY,  g_groundSize, 0, 1, 0),
-    VertexPN( g_groundSize, g_groundY, -g_groundSize, 0, 1, 0)
-  };
-  unsigned short idx[] = {0, 1, 2, 0, 2, 3};
-  g_ground.reset(new Geometry(&vtx[0], &idx[0], 4, 6));
+  int ibLen, vbLen;
+  getPlaneVbIbLen(vbLen, ibLen);
+
+  // Temporary storage for cube Geometry
+  vector<VertexPNTBX> vtx(vbLen);
+  vector<unsigned short> idx(ibLen);
+
+  makePlane(g_groundSize*2, vtx.begin(), idx.begin());
+  g_ground.reset(new SimpleIndexedGeometryPNTBX(&vtx[0], &idx[0], vbLen, ibLen));
 }
 
 static void initCubes() {
   int ibLen, vbLen;
   getCubeVbIbLen(vbLen, ibLen);
 
-
-  // Temporary storage for cube geometry
-  vector<VertexPN> vtx(vbLen);
+  // Temporary storage for cube Geometry
+  vector<VertexPNTBX> vtx(vbLen);
   vector<unsigned short> idx(ibLen);
 
   makeCube(1, vtx.begin(), idx.begin());
-  g_cube.reset(new Geometry(&vtx[0], &idx[0], vbLen, ibLen));
+  g_cube.reset(new SimpleIndexedGeometryPNTBX(&vtx[0], &idx[0], vbLen, ibLen));
 }
 
 static void initSphere() {
   int ibLen, vbLen;
   getSphereVbIbLen(20, 10, vbLen, ibLen);
 
-  // Temporary storage for sphere geometry
-  vector<VertexPN> vtx(vbLen);
+  // Temporary storage for sphere Geometry
+  vector<VertexPNTBX> vtx(vbLen);
   vector<unsigned short> idx(ibLen);
   makeSphere(1, 20, 10, vtx.begin(), idx.begin());
-  g_sphere.reset(new Geometry(&vtx[0], &idx[0], vtx.size(), idx.size()));
+  g_sphere.reset(new SimpleIndexedGeometryPNTBX(&vtx[0], &idx[0], vtx.size(), idx.size()));
 }
 
 static void initRobots() {
@@ -474,10 +397,8 @@ static void initRobots() {
 }
 
 // takes a projection matrix and send to the the shaders
-inline void sendProjectionMatrix(const ShaderState& curSS, const Matrix4& projMatrix) {
-  GLfloat glmatrix[16];
-  projMatrix.writeToColumnMajorMatrix(glmatrix); // send projection matrix
-  safe_glUniformMatrix4fv(curSS.h_uProjMatrix, glmatrix);
+inline void sendProjectionMatrix(Uniforms& uniforms, const Matrix4& projMatrix) {
+  uniforms.put("uProjMatrix", projMatrix);
 }
 
 // update g_frustFovY from g_frustMinFov, g_windowWidth, and g_windowHeight
@@ -580,47 +501,47 @@ static void updateArcballScale() {
     g_arcballScale = getScreenToEyeScale(depth, g_frustFovY, g_windowHeight);
 }
 
-static void drawArcBall(const ShaderState& curSS) {
+static void drawArcBall(Uniforms& uniforms) {
   // switch to wire frame mode
   glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
   RigTForm arcballEye = inv(getPathAccumRbt(g_world, g_currentCameraNode)) * getArcballRbt();
   Matrix4 MVM = rigTFormToMatrix(arcballEye) * Matrix4::makeScale(Cvec3(1, 1, 1) * g_arcballScale * g_arcballScreenRadius);
-  sendModelViewNormalMatrix(curSS, MVM, normalMatrix(MVM));
+  sendModelViewNormalMatrix(uniforms, MVM, normalMatrix(MVM));
 
-  safe_glUniform3f(curSS.h_uColor, 0.27, 0.82, 0.35); // set color
-  g_sphere->draw(curSS);
+  safe_glUniform3f(uniforms.h_uColor, 0.27, 0.82, 0.35); // set color
+  g_sphere->draw(uniforms);
 
   // switch back to solid mode
-  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  g_arcballMat->draw(*g_sphere, uniforms);
 }
 
-static void drawStuff(const ShaderState& curSS, bool picking) {
+static void drawStuff(Uniforms& uniforms, bool picking) {
   // if we are not translating, update arcball scale
   if (!(g_mouseMClickButton || (g_mouseLClickButton && g_mouseRClickButton) || (g_mouseLClickButton && !g_mouseRClickButton && g_spaceDown)))
     updateArcballScale();
 
   // build & send proj. matrix to vshader
   const Matrix4 projmat = makeProjectionMatrix();
-  sendProjectionMatrix(curSS, projmat);
+  sendProjectionMatrix(uniforms, projmat);
 
   const RigTForm eyeRbt = getPathAccumRbt(g_world, g_currentCameraNode);
   const RigTForm invEyeRbt = inv(eyeRbt);
 
   const Cvec3 eyeLight1 = Cvec3(invEyeRbt * Cvec4(g_light1, 1));
   const Cvec3 eyeLight2 = Cvec3(invEyeRbt * Cvec4(g_light2, 1));
-  safe_glUniform3f(curSS.h_uLight, eyeLight1[0], eyeLight1[1], eyeLight1[2]);
-  safe_glUniform3f(curSS.h_uLight2, eyeLight2[0], eyeLight2[1], eyeLight2[2]);
+  safe_glUniform3f(uniforms.h_uLight, eyeLight1[0], eyeLight1[1], eyeLight1[2]);
+  safe_glUniform3f(uniforms.h_uLight2, eyeLight2[0], eyeLight2[1], eyeLight2[2]);
 
   if (!picking) {
-    Drawer drawer(invEyeRbt, curSS);
+    Drawer drawer(invEyeRbt, uniforms);
     g_world->accept(drawer);
 
     if (g_displayArcball && shouldUseArcball())
-      drawArcBall(curSS);
+      drawArcBall(uniforms);
   }
   else {
-    Picker picker(invEyeRbt, curSS);
+    Picker picker(invEyeRbt, uniforms);
     g_world->accept(picker);
     glFlush();
     g_currentPickedRbtNode = picker.getRbtNodeAtXY(g_mouseClickX, g_mouseClickY);
