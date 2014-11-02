@@ -117,7 +117,9 @@ static shared_ptr<Geometry> g_ground, g_cube, g_sphere;
 
 // --------- Scene
 
-static const Cvec3 g_light1(2.0, 3.0, 14.0), g_light2(-2, -3.0, -5.0);  // define two lights positions in world space
+//static const Cvec3 g_light1(2.0, 3.0, 14.0), g_light2(-2, -3.0, -5.0);  // define two lights positions in world space
+
+static shared_ptr<SgTransformNode> g_light1Node, g_light2Node;
 
 static shared_ptr<SgRootNode> g_world;
 static shared_ptr<SgRbtNode> g_skyNode, g_groundNode, g_robot1Node, g_robot2Node;
@@ -529,11 +531,14 @@ static void drawStuff(bool picking) {
   const RigTForm eyeRbt = getPathAccumRbt(g_world, g_currentCameraNode);
   const RigTForm invEyeRbt = inv(eyeRbt);
 
-  const Cvec3 eyeLight1 = Cvec3(invEyeRbt * Cvec4(g_light1, 1));
-  const Cvec3 eyeLight2 = Cvec3(invEyeRbt * Cvec4(g_light2, 1));
+  // const Cvec3 eyeLight1 = Cvec3(invEyeRbt * Cvec4(g_light1, 1));
+  // const Cvec3 eyeLight2 = Cvec3(invEyeRbt * Cvec4(g_light2, 1));
 
-  uniforms.put("uLight", eyeLight1);
-  uniforms.put("uLight2", eyeLight2);
+  const Cvec3 eyeLight1 = getPathAccumRbt(g_world, g_light1Node).getTranslation();
+  const Cvec3 eyeLight2 = getPathAccumRbt(g_world, g_light2Node).getTranslation();
+
+  uniforms.put("uLight", (Cvec3) (invEyeRbt * Cvec4(eyeLight1,1)));
+  uniforms.put("uLight2", (Cvec3) (invEyeRbt * Cvec4(eyeLight2,1)));
 
   if (!picking) {
     Drawer drawer(invEyeRbt, uniforms);
@@ -979,6 +984,9 @@ static void constructRobot(shared_ptr<SgTransformNode> base, shared_ptr<Material
 static void initScene() {
   g_world.reset(new SgRootNode());
 
+  g_light1Node.reset(new SgRbtNode(RigTForm((Cvec3) (2.0, 3.0, 14.0))));
+  g_light2Node.reset(new SgRbtNode(RigTForm((Cvec3) (-2.0, -3.0, -5.0))));
+
   g_skyNode.reset(new SgRbtNode(RigTForm(Cvec3(0.0, 0.25, 4.0))));
 
   g_groundNode.reset(new SgRbtNode());
@@ -995,6 +1003,8 @@ static void initScene() {
   g_world->addChild(g_groundNode);
   g_world->addChild(g_robot1Node);
   g_world->addChild(g_robot2Node);
+  g_world->addChild(g_light1Node);
+  g_world->addChild(g_light2Node);
 
   g_currentCameraNode = g_skyNode;
 }
