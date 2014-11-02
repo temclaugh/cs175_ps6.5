@@ -985,8 +985,8 @@ static void constructRobot(shared_ptr<SgTransformNode> base, shared_ptr<Material
 static void initScene() {
   g_world.reset(new SgRootNode());
 
-  g_light1Node.reset(new SgRbtNode(RigTForm(Cvec3 (2.0, 3.0, 14.0))));
-  g_light2Node.reset(new SgRbtNode(RigTForm(Cvec3 (-2.0, -3.0, -5.0))));
+  g_light1Node.reset(new SgRbtNode(RigTForm(g_light1)));
+  g_light2Node.reset(new SgRbtNode(RigTForm(g_light2)));
 
   g_skyNode.reset(new SgRbtNode(RigTForm(Cvec3(0.0, 0.25, 4.0))));
 
