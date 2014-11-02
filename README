@@ -1,0 +1,40 @@
+Assignment 5
+
+PARTNERS: Tim McLaughlin, Jo Booth
+
+Submitting:
+AUTHORS               glsupport.h
+LICENSE               glsupport.o
+Makefile              matrix4.h
+README                picker.cpp
+animation.txt         picker.h
+arcball.h             picker.o
+asst5                 ppm.cpp
+asst5-snippets.cpp    ppm.h
+asst5.cpp             ppm.o
+asst5.o               quat.h
+asst5.vcxproj         rigtform.h
+asst5.vcxproj.filters scenegraph.cpp
+asstcommon.h          scenegraph.h
+cvec.h                scenegraph.o
+drawer.h              sgfiller.h
+geometrymaker.h       sgutils.h
+glsupport.cpp         shaders
+
+Platforms:
+  Ubuntu and OS X
+
+Compilation:
+  make
+
+Requirements:
+  We met all of the problem set requirements!
+
+Code Design:
+  We just followed the design on the spec.
+
+Running program:
+  ./asst5, use same keybindings and file format as solution binary.
+
+Exrta stuff:
+  None.
