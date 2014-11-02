@@ -117,7 +117,7 @@ static shared_ptr<Geometry> g_ground, g_cube, g_sphere;
 
 // --------- Scene
 
-//static const Cvec3 g_light1(2.0, 3.0, 14.0), g_light2(-2, -3.0, -5.0);  // define two lights positions in world space
+static const Cvec3 g_light1(2.0, 3.0, 14.0), g_light2(-2, -3.0, -5.0);  // define two lights positions in world space
 
 static shared_ptr<SgTransformNode> g_light1Node, g_light2Node;
 
@@ -987,8 +987,8 @@ static void constructRobot(shared_ptr<SgTransformNode> base, shared_ptr<Material
 static void initScene() {
   g_world.reset(new SgRootNode());
 
-  g_light1Node.reset(new SgRbtNode(RigTForm((Cvec3) (2.0, 3.0, 14.0))));
-  g_light2Node.reset(new SgRbtNode(RigTForm((Cvec3) (-2.0, -3.0, -5.0))));
+  g_light1Node.reset(new SgRbtNode(RigTForm(Cvec3 (2.0, 3.0, 14.0))));
+  g_light2Node.reset(new SgRbtNode(RigTForm(Cvec3 (-2.0, -3.0, -5.0))));
 
   g_skyNode.reset(new SgRbtNode(RigTForm(Cvec3(0.0, 0.25, 4.0))));
 
@@ -1008,6 +1008,12 @@ static void initScene() {
   g_world->addChild(g_robot2Node);
   g_world->addChild(g_light1Node);
   g_world->addChild(g_light2Node);
+
+  g_light1Node->addChild(shared_ptr<MyShapeNode>(
+                           new MyShapeNode(g_sphere, g_lightMat, Cvec3(2.0,3.0,14.0))));
+
+  g_light2Node->addChild(shared_ptr<MyShapeNode>(
+                           new MyShapeNode(g_sphere, g_lightMat, Cvec3(-2,-3,-5))));
 
   g_currentCameraNode = g_skyNode;
 }
