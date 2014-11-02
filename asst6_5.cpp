@@ -549,6 +549,7 @@ static void drawStuff(bool picking) {
   }
   else {
     Picker picker(invEyeRbt, uniforms);
+    g_overridingMaterial = g_pickingMat;
     g_world->accept(picker);
     g_overridingMaterial.reset();
     glFlush();
