@@ -513,9 +513,6 @@ static void drawArcBall(Uniforms& uniforms) {
 
   uniforms.put("uColor", Cvec3 (0.27, 0.82, 0.35));
 
-  //safe_glUniform3f(uniforms.h_uColor, 0.27, 0.82, 0.35); // set color
-  //g_sphere->draw((int*)&uniforms);
-
   // switch back to solid mode
   g_arcballMat->draw(*g_sphere, uniforms);
 }
