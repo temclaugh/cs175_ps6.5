@@ -12,7 +12,15 @@ varying vec3 vEyePos;
 void main() {
   // TODO: replace the following line with loading of normal from uTexNormal
   //       transforming to eye space, and normalizing
-  vec3 normal = vec3(0, 0, 1);
+  //vec3 normal = vec3(0, 0, 1);
+
+  vec3 normal = texture2D(uTexNormal,vTexCoord).xyz;
+
+  normal *= dot(normalize(vNTMat*normal), vEyePos);
+  normal.x = 2.0*normal.x - 1.0;
+  normal.y = 2.0*normal.y - 1.0;
+  normal.z = 2.0*normal.z - 1.0;
+  normal = normalize(normal);
 
   vec3 viewDir = normalize(-vEyePos);
   vec3 lightDir = normalize(uLight - vEyePos);
