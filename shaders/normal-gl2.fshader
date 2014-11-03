@@ -16,23 +16,19 @@ void main() {
 
   vec3 normal = texture2D(uTexNormal,vTexCoord).xyz;
 
-  normal *= dot(normalize(vNTMat*normal), vEyePos);
-  normal.x = 2.0*normal.x - 1.0;
-  normal.y = 2.0*normal.y - 1.0;
-  normal.z = 2.0*normal.z - 1.0;
-  normal = normalize(normal);
+  normal = normalize(2.0*normal - 1.0);
 
   vec3 viewDir = normalize(-vEyePos);
   vec3 lightDir = normalize(uLight - vEyePos);
   vec3 lightDir2 = normalize(uLight2 - vEyePos);
 
-  float nDotL = dot(normal, lightDir);
+  float nDotL = dot(normalize(vNTMat * normal), lightDir);
   vec3 reflection = normalize( 2.0 * normal * nDotL - lightDir);
   float rDotV = max(0.0, dot(reflection, viewDir));
   float specular = pow(rDotV, 32.0);
   float diffuse = max(nDotL, 0.0);
 
-  nDotL = dot(normal, lightDir2);
+  nDotL = dot(normalize(vNTMat * normal), lightDir2);
   reflection = normalize( 2.0 * normal * nDotL - lightDir2);
   rDotV = max(0.0, dot(reflection, viewDir));
   specular += pow(rDotV, 32.0);
