@@ -203,7 +203,7 @@ static void delete_frame() {
 static void write_frame() {
   list<vector<RigTForm> >::iterator it = key_frames.begin();
   FILE* output = fopen("animation.txt", "w");
-  fprintf(output, "%d 22\n", key_frames.size());
+  fprintf(output, "%d 26\n", key_frames.size());
   while (it != key_frames.end()) {
     vector<RigTForm> frame = *it;
     for (int i = 0; i < frame.size(); ++i) {
@@ -233,7 +233,7 @@ static void read_frame() {
 
   for (int i = 0; i < nFrames; ++i) {
     vector<RigTForm> frame;
-    for (int j = 0; j < 22; ++j) {
+    for (int j = 0; j < 26; ++j) {
       Cvec3 transFact;
       Quat linFact;
       fscanf(input, "%lf %lf %lf %lf %lf %lf %lf\n",
@@ -322,7 +322,7 @@ bool interpolateAndDisplay(float t) {
   // d ci ci+1 e
   float alpha = t - (int) t;
   vector<RigTForm> frame;
-  for (int i = 0; i < 22; ++i) {
+  for (int i = 0; i < 26; ++i) {
     Cvec3 c_i_neg_1 = pre_frame[i].getTranslation();
     Cvec3 c_i = frame_1[i].getTranslation();
     Cvec3 c_i_1 = frame_2[i].getTranslation();
@@ -1008,10 +1008,10 @@ static void initScene() {
   g_world->addChild(g_light2Node);
 
   g_light1Node->addChild(shared_ptr<MyShapeNode>(
-                           new MyShapeNode(g_sphere, g_lightMat, Cvec3(0,0,0))));
+                           new MyShapeNode(g_sphere, g_lightMat, Cvec3(0,1,0))));
 
   g_light2Node->addChild(shared_ptr<MyShapeNode>(
-                           new MyShapeNode(g_sphere, g_lightMat, Cvec3(0,0,0))));
+                           new MyShapeNode(g_sphere, g_lightMat, Cvec3(0,1,0))));
 
   g_currentCameraNode = g_skyNode;
 }
