@@ -293,13 +293,13 @@ Quat bezierRot(Quat c_i_neg_1, Quat c_i, Quat c_i_1, Quat c_i_2, int i, float t)
   Quat d = getDRot(c_i_1, c_i_neg_1, c_i);
   Quat e = getERot(c_i_2, c_i_1, c_i);
 
-  Quat f = qpow(cond_neg(c_i), 1 - t + i) * qpow(cond_neg(d), t -i);
-  Quat g = qpow(cond_neg(d), 1 - t + i) * qpow(cond_neg(e), t - i);
-  Quat h = qpow(cond_neg(e), 1 - t + i) * qpow(cond_neg(c_i_1), t - i);
-  Quat m = qpow(cond_neg(f), 1 - t + i) * qpow(cond_neg(g), t - i);
-  Quat n = qpow(cond_neg(g), 1 - t + i) * qpow(cond_neg(h), t - i);
+  Quat f = slerp(c_i, d, t -i);
+  Quat g = slerp(d, e, t - i);
+  Quat h = slerp(e, c_i_1, t - i);
+  Quat m = slerp(f, g, t - i);
+  Quat n = slerp(g, h, t - i);
 
-  return qpow(cond_neg(m), 1 - t + i) * qpow(cond_neg(n), t - i);
+  return slerp(m, n, t - i);
 }
 
 bool interpolateAndDisplay(float t) {
@@ -1010,10 +1010,10 @@ static void initScene() {
   g_world->addChild(g_light2Node);
 
   g_light1Node->addChild(shared_ptr<MyShapeNode>(
-                           new MyShapeNode(g_sphere, g_lightMat, Cvec3(0,1,0))));
+                           new MyShapeNode(g_sphere, g_lightMat, Cvec3(0,0,0))));
 
   g_light2Node->addChild(shared_ptr<MyShapeNode>(
-                           new MyShapeNode(g_sphere, g_lightMat, Cvec3(0,1,0))));
+                           new MyShapeNode(g_sphere, g_lightMat, Cvec3(0,0,0))));
 
   g_currentCameraNode = g_skyNode;
 }
