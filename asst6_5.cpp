@@ -1010,10 +1010,10 @@ static void initScene() {
   g_world->addChild(g_light2Node);
 
   g_light1Node->addChild(shared_ptr<MyShapeNode>(
-                           new MyShapeNode(g_sphere, g_lightMat, Cvec3(0,1,0))));
+                           new MyShapeNode(g_sphere, g_lightMat, Cvec3(0,0,0))));
 
   g_light2Node->addChild(shared_ptr<MyShapeNode>(
-                           new MyShapeNode(g_sphere, g_lightMat, Cvec3(0,1,0))));
+                           new MyShapeNode(g_sphere, g_lightMat, Cvec3(0,0,0))));
 
   g_currentCameraNode = g_skyNode;
 }
